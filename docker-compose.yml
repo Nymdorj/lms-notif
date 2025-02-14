@@ -1,0 +1,32 @@
+version: '3.9'
+
+services:
+  notification:
+    container_name: notification
+    image: notification
+    build: .
+    volumes:
+      - .:/usr/app/
+      - /usr/app/node_modules
+    ports:
+      - '${PORT}:${PORT}'
+    depends_on:
+      - notification_db
+    command: pnpm run start:dev
+
+  notification_db:
+    container_name: notification_db
+    image: postgres:17.2-alpine
+    restart: on-failure
+    environment:
+      TZ: Asia/Ulaanbaatar
+      POSTGRES_USER: ${POSTGRESQL_USER}
+      POSTGRES_PASSWORD: ${POSTGRESQL_PASSWORD}
+      POSTGRES_DATABASE: ${POSTGRESQL_DATABASE}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    ports:
+      - ${PORT_DB}:5432
+
+volumes:
+  postgres: {}

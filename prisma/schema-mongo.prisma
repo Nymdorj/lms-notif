@@ -1,0 +1,133 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// goods /sales/ /tags/
+model Company {
+  id        String        @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  status    CompanyStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  subCategories SubCategory[]
+  productIDs    String[]      @db.ObjectId
+  products      Product[]     @relation(fields: [productIDs], references: [id])
+}
+
+// sub-categories
+// model SubCategory {
+//   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+//   name      String
+//   minAge    Int?
+//   status    Status
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   sales      Sales?
+//   categoryId String    @db.ObjectId
+//   category   Category  @relation(fields: [categoryId], references: [id])
+//   productIDs String[]  @db.ObjectId
+//   products   Product[] @relation(fields: [productIDs], references: [id])
+// }
+
+model Tag {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  minAge    Int?
+  status    Status
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sales      Sales?
+  products   Product[] @relation(fields: [productIDs], references: [id])
+  productIDs String[]  @db.ObjectId
+}
+
+model Product {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  minAge      Int?
+  code        String       @unique
+  image       ProductImage
+  name        String
+  price       Int // 10.50 -> 1050, 11.23 -> 1123
+  weight      Float
+  measurement String //kg, gr, l, shirheg
+  remaining   Int
+  description String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  companyId String  @db.ObjectId
+  company   Company @relation(fields: [companyId], references: [id])
+
+  sales   Sales?   @relation(fields: [salesId], references: [id])
+  tagIDs  String[] @db.ObjectId
+  tags    Tag[]    @relation(fields: [tagIDs], references: [id])
+  salesId String   @db.ObjectId
+}
+
+model Sales {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  salePercent Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tag           Tag         @relation(fields: [tagId], references: [id])
+  tagId         String      @unique @db.ObjectId
+  category      Category    @relation(fields: [categoryId], references: [id])
+  categoryId    String      @unique @db.ObjectId
+  subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+  subCategoryId String      @unique @db.ObjectId
+  product       Product[]
+}
+
+model Voucher {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  code        String
+  type        VoucherType
+  value       Int // % or Money
+  description String?
+  companyId   String      @db.ObjectId
+  company     Company     @relation(fields: [companyId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Coupon {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  code        String
+  productId   String   @db.ObjectId
+  product     Product  @relation(fields: [productId], references: [id])
+  remaining   Int
+  usage       Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+type ProductImage {
+  key String
+}
+
+enum VoucherType {
+  DISCOUNT
+  GIFT
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum CompanyStatus {
+  CONFIRMED
+  PENDING
+  CANCELLED
+}

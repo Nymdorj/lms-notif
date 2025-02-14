@@ -1,0 +1,255 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             Int      @unique @default(autoincrement())
+  userId         Int      @unique
+  loyaltyPercent Float
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  family   Family? @relation(fields: [familyId], references: [id])
+  familyId Int?
+
+  vouchers             VouchersOnUsers[]
+  couponUsageHistories couponHistory[]
+}
+
+// family
+model Family {
+  id        Int      @unique @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  // relation Relation
+}
+
+// invitation
+model FamilyRequest {
+  id             Int                 @unique @default(autoincrement())
+  userId         Int
+  phoneNumber    String
+  status         FamilyRequestStatus @default(PENDING)
+  notificationId Int
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model FriendRequest {
+  id             Int                 @unique @default(autoincrement())
+  userId         Int
+  phoneNumber    String
+  status         FamilyRequestStatus @default(PENDING)
+  notificationId Int
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+// voucher - mongon dun
+
+// coupon - baraa unegui
+
+// promotion
+// goods /sales/ /tags/
+model Company {
+  id        Int           @unique @default(autoincrement())
+  name      String
+  status    CompanyStatus
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  products Product[]
+  vouchers Voucher[]
+}
+
+// sub-categories
+// model SubCategory {
+//   id        String   @id @default(auto()) @map("_id") @db.ObjectId
+//   name      String
+//   minAge    Int?
+//   status    Status
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   sales      Sales?
+//   categoryId String    @db.ObjectId
+//   category   Category  @relation(fields: [categoryId], references: [id])
+//   productIDs String[]  @db.ObjectId
+//   products   Product[] @relation(fields: [productIDs], references: [id])
+// }
+
+model Tag {
+  id        Int      @unique @default(autoincrement())
+  name      String
+  minAge    Int?
+  status    Status
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // sales      Sales?
+  products Product[]
+}
+
+model Product {
+  id          Int      @unique @default(autoincrement())
+  minAge      Int?
+  code        String   @unique
+  name        String
+  price       Decimal  @db.Decimal(16, 2) // 10.50 -> 1050, 11.23 -> 1123
+  weight      Float
+  measurement String //kg, gr, l, shirheg
+  remaining   Int
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  companyId Int
+  company   Company @relation(fields: [companyId], references: [id])
+  tagId     Int?
+  tag       Tag?    @relation(fields: [tagId], references: [id])
+
+  images  ProductImage[]
+  coupons Coupon[]
+  voucher Voucher[]
+
+  // sales   Sales?   @relation(fields: [salesId], references: [id])
+  // tagIDs  String[] @db.ObjectId
+  // tags    Tag[]    @relation(fields: [tagIDs], references: [id])
+  // salesId String   @db.ObjectId
+}
+
+// model Sales {
+//   id          String   @id @default(auto()) @map("_id") @db.ObjectId
+//   salePercent Float
+//   createdAt   DateTime @default(now())
+//   updatedAt   DateTime @updatedAt
+
+//   tag           Tag         @relation(fields: [tagId], references: [id])
+//   tagId         String      @unique @db.ObjectId
+//   category      Category    @relation(fields: [categoryId], references: [id])
+//   categoryId    String      @unique @db.ObjectId
+//   subCategory   SubCategory @relation(fields: [subCategoryId], references: [id])
+//   subCategoryId String      @unique @db.ObjectId
+//   product       Product[]
+// }
+
+model Voucher {
+  id          Int         @unique @default(autoincrement())
+  name        String
+  code        String      @unique
+  type        VoucherType
+  amount      Decimal     @default(0) @db.Decimal(16, 2) // Amount based
+  discount    Float       @default(0) // Percent based
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  companyId Int
+  company   Company           @relation(fields: [companyId], references: [id])
+  productId Int?
+  product   Product?          @relation(fields: [productId], references: [id])
+  users     VouchersOnUsers[]
+}
+
+model VouchersOnUsers {
+  id           Int           @unique @default(autoincrement())
+  voucherId    Int
+  voucher      Voucher       @relation(fields: [voucherId], references: [id])
+  userId       Int
+  user         User          @relation(fields: [userId], references: [id])
+  status       VoucherStatus @default(ACTIVE)
+  expireDate   DateTime?
+  usedDate     DateTime?
+  usedAmount   Decimal       @default(0) @db.Decimal(16, 2)
+  assegnedDate DateTime      @default(now())
+}
+
+model Coupon {
+  id              Int          @unique @default(autoincrement())
+  code            String       @unique
+  remaining       Int // uldegdel
+  usage           Int // heden udaa hereglegdsen
+  maxUsagePerUser Int? // neg hereglegch heden udaa ashiglaj boloh
+  description     String?
+  status          CouponStatus @default(ACTIVE)
+  startDate       DateTime?
+  endDate         DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  productId     Int
+  product       Product         @relation(fields: [productId], references: [id])
+  couponHistory couponHistory[]
+}
+
+model couponHistory {
+  id         Int      @unique @default(autoincrement())
+  couponCode String
+  coupon     Coupon   @relation(fields: [couponCode], references: [code])
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model ProductImage {
+  id          Int    @unique @default(autoincrement())
+  key         String
+  contentType String
+  type        String
+
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+enum VoucherType {
+  FIXED
+}
+
+enum VoucherStatus {
+  EXPIRED
+  USED
+  ACTIVE
+  DISABLED
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+enum CompanyStatus {
+  CONFIRMED
+  PENDING
+  CANCELLED
+}
+
+enum CouponStatus {
+  EXPIRED
+  DONE
+  ACTIVE
+  DISABLED
+}
+
+enum FamilyRequestStatus {
+  CONFIRMED
+  CANCELLED
+  PENDING
+}
+
+// enum Relation {
+//   FATHER
+//   MOTHER
+//   CHILD
+//   SPOUSE
+//   HUSBAND
+//   WIFE
+//   OTHER
+// }

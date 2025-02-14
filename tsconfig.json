@@ -1,0 +1,34 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"declaration": true,
+		"removeComments": true,
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true,
+		"allowSyntheticDefaultImports": true,
+		"target": "ES2021",
+		"sourceMap": true,
+		"outDir": "./dist",
+		"baseUrl": "./",
+		"paths": {
+			"@interceptors/*": ["src/common/interceptors/*"],
+			"@exceptions/*": ["src/exceptions/*"],
+			"@filters/*": ["src/common/filters/*"],
+			"@prisma/*": ["src/common/prisma/*"],
+			"@utils": ["src/common/utils"],
+			"@types": ["src/common/types"],
+			"@common/*": ["src/common/*"],
+			"@modules/*": ["src/modules/*"]
+		},
+		"incremental": true,
+		"skipLibCheck": true,
+		"strictNullChecks": true,
+		"forceConsistentCasingInFileNames": true,
+		"noImplicitAny": false,
+		"strictBindCallApply": false,
+		"noFallthroughCasesInSwitch": false
+	},
+	"watchOptions": {
+		"watchFile": "fixedPollingInterval"
+	}
+}

@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// {
+//   application: 'HR',
+//   recipients: [{userId: 1, email: test@gmail.com},{userId: 2, email: test2@gmail.com}]
+//   notification: {
+//     subject: 'Bonus',
+//     content: 'Onii etssiin uramshuulal orloo'
+//   }
+// }
+
+// {
+//   application: 'LMS',
+//   recipients: [{userId: 1, deviceToken: token},{userId: 2, deviceToken: token}]
+//   notification: {
+//     title: 'Bonus',
+//     content: '5 suu awaad 1 ondog unegui awaarai'
+//   }
+// }
+
+// {
+//   application: 'LMS',
+//   userId: 1,
+//   deviceToken: 'token',
+//   title: 'uramshuulal',
+//   content: 'M martiin buh salbaraas unegui suu awaarai'
+// }
+
+model BatchNotification {
+  id          Int              @id @unique @default(autoincrement())
+  application Application
+  type        NotificationType
+  subject     String
+  content     String           @db.Text
+  total       Int
+  success     Int?
+  failed      Int?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime?        @updatedAt
+
+  notifications         Notification[]
+  notificationScheduler NotificationScheduler?
+  recipients            BatchNotificationRecipients[]
+
+  @@map("batch_notification")
+}
+
+model BatchNotificationRecipients {
+  id        Int    @id @unique @default(autoincrement())
+  userId    String
+  recipient String
+
+  batchNotification   BatchNotification @relation(fields: [batchNotificationId], references: [id])
+  batchNotificationId Int
+
+  @@map("batch_notification_recipients")
+}
+
+model Notification {
+  id           Int                @id @unique @default(autoincrement())
+  userId       String?
+  application  Application
+  type         NotificationType
+  status       NotificationStatus
+  errorMessage String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime?          @updatedAt
+
+  batchNotification   BatchNotification? @relation(fields: [batchNotificationId], references: [id])
+  batchNotificationId Int?
+
+  pushNotification  PushNotification?
+  smsNotification   SmsNotification?
+  emailNotification EmailNotification?
+
+  @@index([userId, application, type])
+  @@index([userId, application, type, status])
+  @@map("notification")
+}
+
+model PushNotification {
+  id          Int     @id @unique @default(autoincrement())
+  pushId      String  @unique @default(cuid())
+  deviceToken String
+  title       String
+  content     String  @db.Text
+  messageId   String?
+  imageUrl    String?
+  data        Json?
+  seen        Boolean @default(false)
+
+  notification   Notification @relation(fields: [notificationId], references: [id])
+  notificationId Int          @unique
+
+  @@index([notificationId, seen])
+  @@map("push_notification")
+}
+
+model SmsNotification {
+  id          Int     @id @unique @default(autoincrement())
+  phoneNumber String
+  subject     String?
+  content     String  @db.Text
+
+  notification   Notification? @relation(fields: [notificationId], references: [id])
+  notificationId Int?          @unique
+
+  @@map("sms_notification")
+}
+
+model EmailNotification {
+  id        Int     @id @unique @default(autoincrement())
+  from      String?
+  recipient String
+  subject   String
+  content   String? @db.Text
+  html      String? @db.Text
+  messageId String?
+
+  attachments    EmailNotificationAttachment[]
+  notification   Notification?                 @relation(fields: [notificationId], references: [id])
+  notificationId Int?                          @unique
+
+  @@map("email_notification")
+}
+
+model EmailNotificationAttachment {
+  id          Int     @id @unique @default(autoincrement())
+  filename    String
+  contentType String
+  filePath    String?
+
+  emailNotification   EmailNotification @relation(fields: [emailNotificationId], references: [id])
+  emailNotificationId Int
+
+  @@map("email_notification_attachment")
+}
+
+model NotificationScheduler {
+  id           Int             @id @unique @default(autoincrement())
+  schedule     DateTime
+  status       SchedulerStatus
+  errorMessage String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  batchNotification   BatchNotification? @relation(fields: [batchNotificationId], references: [id])
+  batchNotificationId Int?               @unique
+
+  @@map("notification_scheduler")
+}
+
+enum SchedulerStatus {
+  RUNNING
+  PENDING
+  DONE
+  FAILED
+  CANCELLED
+
+  @@map("status")
+}
+
+enum NotificationStatus {
+  SUCCESS
+  FAILED
+  PENDING
+
+  @@map("notification_status")
+}
+
+enum Application {
+  BURGER_KING
+  LMS
+  RMS
+  HR
+
+  @@map("application")
+}
+
+enum NotificationType {
+  PUSH
+  SMS
+  EMAIL
+
+  @@map("notification_type")
+}
