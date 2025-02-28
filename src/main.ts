@@ -15,6 +15,7 @@ import { swaggerExceptions } from '@exceptions/error.code';
 async function bootstrap() {
 	const app = await NestFactory.create(AppModule);
 	const configService = app.get(ConfigService);
+	app.setGlobalPrefix('api');
 
 	const httpAdapterHost = app.get(HttpAdapterHost);
 	app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost));
@@ -28,17 +29,18 @@ async function bootstrap() {
 
 	app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
+	const port = configService.get<number>('PORT', 3000);
+
 	const config = new DocumentBuilder()
 		.setTitle('Notification service')
 		.setDescription('Wallet API description\n' + '### Error Codes\n' + swaggerExceptions())
 		.setVersion('1.0')
+		.addServer('http://localhost:' + port)
 		.build();
 	const document = SwaggerModule.createDocument(app, config);
 	SwaggerModule.setup('api', app, document, {
 		jsonDocumentUrl: 'swagger/json',
 	});
-
-	const port = configService.get<number>('PORT', 3000);
 
 	const logger = new Logger();
 	logger.log(`Notification service listening on: ${port}`);
